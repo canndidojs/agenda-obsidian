@@ -36,10 +36,16 @@ html{scrollbar-width:none}
 ::-webkit-scrollbar{display:none}
 .skip{position:absolute;left:var(--s3);top:-60px;background:var(--ac);color:var(--ac-tx);padding:var(--s2) var(--s3);border-radius:var(--r);z-index:10}
 .skip:focus{top:var(--s3)}
-main{max-width:680px;margin:0 auto;padding:0 calc(var(--s6) + var(--s2)) 64px}
+html,body{height:100%;overflow:hidden}
+*{scrollbar-width:none}
+/* A janela nunca rola: o cabeçalho, a captura e o rodapé ficam fixos e só a lista de anotações rola por dentro */
+main{display:flex;flex-direction:column;height:100%;max-width:680px;margin:0 auto;padding:0 calc(var(--s6) + var(--s2))}
+/* Grade comum: coluna do dia/hora (80px) + coluna do texto. O título, as horas e o texto das anotações usam as mesmas colunas. */
+:root{--gutter:88px}
 
-/* 1. Navegação (apoio, discreta; fica fixa no topo porque não há barra de rolagem) */
-.top{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:var(--s1);margin-bottom:var(--s6);padding:var(--s5) 0 var(--s3);background:var(--bg)}
+/* 1. Navegação (apoio, discreta) */
+.top{flex:none;display:flex;align-items:center;gap:var(--s1);margin-bottom:var(--s5);padding:var(--s5) 0 0}
+#prev{margin-left:calc((36px - 18px) / -2)}
 .icon-btn{display:grid;place-items:center;flex:none;width:36px;height:36px;border:0;border-radius:var(--r);background:none;color:var(--mut);cursor:pointer;
   transition:background-color .12s,color .12s}
 .icon-btn:hover{background:var(--surface);color:var(--tx)}
@@ -55,7 +61,7 @@ main{max-width:680px;margin:0 auto;padding:0 calc(var(--s6) + var(--s2)) 64px}
 .search::-webkit-search-cancel-button{display:none}
 
 /* 2. Dia (nível mais alto da hierarquia) */
-.hero{display:flex;align-items:baseline;gap:var(--s4);margin-bottom:var(--s6)}
+.hero{flex:none;display:grid;grid-template-columns:var(--gutter) minmax(0,1fr);align-items:baseline;margin-bottom:var(--s5)}
 .big{font-size:var(--t-day);line-height:.85;font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
 .big.today{color:var(--ac-fg)}
 .hero h1{margin:0;font-size:var(--t-title);line-height:1.2;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
@@ -64,7 +70,7 @@ main{max-width:680px;margin:0 auto;padding:0 calc(var(--s6) + var(--s2)) 64px}
 .chip::before{content:"·";margin:0 var(--s2)}
 
 /* 3. Captura (ação principal) */
-.capture{position:relative;margin-bottom:var(--s7);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);transition:border-color .12s}
+.capture{position:relative;flex:none;margin-bottom:var(--s5);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);transition:border-color .12s}
 .capture:focus-within{border-color:var(--ac-fg)}
 .row{display:flex;align-items:center;gap:var(--s2);padding:var(--s1) var(--s1) var(--s1) var(--s4)}
 .row #texto{flex:1;min-width:0;height:44px;padding:0;background:none;border:0;font-size:17px}
@@ -83,25 +89,31 @@ main{max-width:680px;margin:0 auto;padding:0 calc(var(--s6) + var(--s2)) 64px}
 .hint{margin:0;padding:var(--s2) var(--s4);border-top:1px solid var(--line);color:var(--mut);font:var(--t-meta)/1.4 var(--mono)}
 kbd{font:inherit;color:var(--tx)}
 
-/* 4. Anotações (conteúdo) */
-.sec{margin-bottom:var(--s6)}
+/* 4. Anotações (conteúdo; é a única área que rola) */
+#lista{flex:1;min-height:0;overflow-y:auto;margin:0 calc(var(--s3) * -1);padding:0 var(--s3) var(--s5);
+  -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - var(--s5)),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - var(--s5)),transparent)}
+.sec{margin-bottom:var(--s5)}
 .sec h2{display:flex;align-items:baseline;gap:var(--s2);margin:0 0 var(--s1);padding-bottom:var(--s2);border-bottom:1px solid var(--line);
   font-size:var(--t-meta);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
 .sec h2 .n{margin-left:auto;font:var(--t-meta) var(--mono);letter-spacing:0;text-transform:none}
 .sec.late h2{color:var(--warn)}
 ul{list-style:none;margin:0;padding:0}
-li{position:relative;display:flex;align-items:baseline;gap:var(--s4);padding:var(--s2) var(--s3);margin:0 calc(var(--s3) * -1);border-radius:var(--r);overflow-wrap:anywhere}
+/* cada linha: [hora/data 60px][caixinha 28px][texto][ações]; o texto começa sempre na coluna de 88px */
+li{display:grid;grid-template-columns:calc(var(--gutter) - 28px) 28px minmax(0,1fr) auto;align-items:baseline;padding:var(--s2) var(--s3);margin:0 calc(var(--s3) * -1);border-radius:var(--r);overflow-wrap:anywhere}
 li:hover{background:var(--surface)}
-.time{flex:none;min-width:40px;color:var(--mut);font:var(--t-meta) var(--mono)}
+li label{display:contents}
+.time,.go{grid-column:1;grid-row:1}
+.txt,.edit{grid-column:3;grid-row:1}
+.acts{grid-column:4;grid-row:1}
+li input[type=checkbox]{grid-column:2;grid-row:1;align-self:start;width:16px;height:16px;margin:4px 0 0;accent-color:var(--ac);cursor:pointer}
+li:has(input[type=checkbox]) .txt{cursor:pointer}
+.time{color:var(--mut);font:var(--t-meta) var(--mono)}
 .empty{margin:0;padding:var(--s4) 0;color:var(--mut);font-size:14px}
-li label{display:flex;align-items:baseline;gap:var(--s4);cursor:pointer;flex:1;min-width:0}
-/* a caixinha das pendências fica na margem, para o texto alinhar com as outras anotações */
-li input[type=checkbox]{position:absolute;left:calc(var(--s4) * -1);top:calc(var(--s2) + var(--s1));width:16px;height:16px;margin:0;accent-color:var(--ac);cursor:pointer}
 .done{color:var(--mut);text-decoration:line-through}
 .tag{display:inline;padding:0;margin:0;border:0;border-radius:0;background:none;cursor:pointer;font:inherit;font-weight:600;
   color:hsl(var(--h) 70% var(--tag-l))}
 .tag:hover{text-decoration:underline;text-underline-offset:3px}
-.go{flex:none;min-width:40px;padding:0;border:0;background:none;color:var(--ac-fg);font:var(--t-meta) var(--mono);cursor:pointer;text-align:left}
+.go{padding:0;border:0;background:none;color:var(--ac-fg);font:var(--t-meta) var(--mono);cursor:pointer;text-align:left}
 .go:hover{text-decoration:underline;text-underline-offset:3px}
 .res-h{margin:0 0 var(--s3);color:var(--mut);font-size:var(--t-label)}
 
@@ -111,13 +123,13 @@ li input[type=checkbox]{position:absolute;left:calc(var(--s4) * -1);top:calc(var
 #sug li{display:block;margin:0;padding:var(--s1) var(--s3);border-radius:2px;cursor:pointer;font:600 var(--t-label) var(--mono)}
 #sug li[aria-selected=true]{background:var(--ac);color:var(--ac-tx)}
 
-.acts{display:flex;flex:none;margin-left:auto;align-self:center;opacity:0;transition:opacity .12s}
+.acts{display:flex;align-self:center;opacity:0;transition:opacity .12s}
 li:hover .acts,li:focus-within .acts{opacity:1}
 .acts button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:var(--r);background:none;color:var(--mut);cursor:pointer}
 .acts button:hover{background:var(--line);color:var(--tx)}
 .acts button.del:hover{color:#ff6b6b}
 .acts svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:square;stroke-linejoin:miter}
-.edit{flex:1;min-width:0;height:32px;padding:0 var(--s2);border:1px solid var(--ac-fg);border-radius:var(--r);background:var(--bg);font-size:var(--t-body)}
+.edit{width:100%;min-width:0;height:32px;padding:0 var(--s2);border:1px solid var(--ac-fg);border-radius:var(--r);background:var(--bg);font-size:var(--t-body)}
 .edit:focus{outline:none}
 #toast{position:fixed;left:50%;bottom:var(--s5);transform:translateX(-50%);display:flex;align-items:center;gap:var(--s4);padding:var(--s2) var(--s2) var(--s2) var(--s4);
   border-radius:var(--r);background:var(--tx);color:var(--bg);font-size:var(--t-label)}
@@ -125,7 +137,7 @@ li:hover .acts,li:focus-within .acts{opacity:1}
 #toast button{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:var(--s1) var(--s2)}
 
 /* 5. Rodapé (informação de apoio) */
-footer{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s7);padding-top:var(--s3);border-top:1px solid var(--line);color:var(--mut);font:var(--t-meta) var(--mono)}
+footer{flex:none;display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0 var(--s4);border-top:1px solid var(--line);color:var(--mut);font:var(--t-meta) var(--mono)}
 footer .path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 footer a{color:var(--ac-fg);text-decoration:none;white-space:nowrap}
 footer a:hover{text-decoration:underline;text-underline-offset:3px}
@@ -228,25 +240,31 @@ function startEdit(li,it,date,text){
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save()}else if(e.key==='Escape'){done=true;load()}});
   inp.addEventListener('blur',save);
 }
-function item(it,date,showDate,actions){
+// goFn: quando passado (resultados da busca), a data vira um botão que abre o dia
+function item(it,date,showDate,actions,goFn){
   const li=document.createElement('li');
   const t=it.text.replace(/^- /,'');
   const task=t.match(/^\[( |x)\] (.*)/);
   const body=task?task[2]:t;
   const m=body.match(/^(\d{2}:\d{2}) (.*)/);
-  const label=showDate?date.slice(8)+'/'+date.slice(5,7):(m?m[1]:'');
+  const label=goFn?`${date.slice(8)}/${date.slice(5,7)}/${date.slice(2,4)}`:showDate?date.slice(8)+'/'+date.slice(5,7):(m?m[1]:'');
   const text=m?m[2]:body;
   const txt=document.createElement('span');txt.className='txt';rich(txt,text);
+  const mkLabel=()=>{
+    if(!label)return null;
+    if(goFn){const b=document.createElement('button');b.type='button';b.className='go';b.textContent=label;
+      b.setAttribute('aria-label','Abrir o dia '+brDate(date));b.onclick=goFn;return b}
+    const tm=document.createElement('span');tm.className='time';tm.textContent=label;return tm;
+  };
+  const lbl=mkLabel();
   if(task){
     const lb=document.createElement('label');
     const cb=document.createElement('input');cb.type='checkbox';cb.checked=task[1]==='x';cb.setAttribute('aria-label',text);
     cb.onchange=async()=>{await post('/api/toggle',{date,idx:it.idx});$('status').textContent=cb.checked?'Pendência concluída':'Pendência reaberta';load()};
     if(cb.checked)txt.className='txt done';
-    lb.append(cb);
-    if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;lb.append(tm)}
-    lb.append(txt);li.append(lb);
+    lb.append(cb);if(lbl)lb.append(lbl);lb.append(txt);li.append(lb);
   }else{
-    if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;li.append(tm)}
+    if(lbl)li.append(lbl);
     li.append(txt);
   }
   if(actions){
@@ -318,13 +336,8 @@ async function runSearch(){
   if(res.length){
     const ul=document.createElement('ul');
     res.forEach(r=>{
-      const li=item(r,r.date,false);
-      const go=document.createElement('button');go.type='button';go.className='go';go.textContent=brDate(r.date);
-      go.setAttribute('aria-label','Abrir o dia '+brDate(r.date));
-      go.onclick=()=>{cur=parseDate(r.date);$('busca').value='';searching=false;load();$('texto').focus()};
-      const first=li.firstChild;
-      if(first.tagName==='LABEL'){first.before(go)}else li.prepend(go);
-      ul.append(li);
+      const goFn=()=>{cur=parseDate(r.date);$('busca').value='';searching=false;load();$('texto').focus()};
+      ul.append(item(r,r.date,false,false,goFn));
     });
     lista.append(ul);
   }
