@@ -11,13 +11,12 @@
   color-scheme:dark light;
   --bg:#14131a; --surface:#1d1c26; --surface-2:#262532; --line:#33323f;
   --tx:#f1effa; --mut:#9d9ab3; --ac:#8b6cff; --ac-tx:#fff; --ring:#b6a3ff;
-  --c-tarefa:#8b6cff; --c-nota:#5bc0eb; --c-admin:#ffb547; --c-dev:#4ade80; --c-ideia:#f472b6;
+  --warn:#ffb547; --tag-l:68%;
 }
 @media (prefers-color-scheme:light){
   :root{
     --bg:#f6f4fb; --surface:#fff; --surface-2:#efecf8; --line:#ddd8ee;
-    --tx:#1c1830; --mut:#6a6585; --ac:#5b3fe0; --ring:#5b3fe0;
-    --c-tarefa:#5b3fe0; --c-nota:#0a84b8; --c-admin:#c47a00; --c-dev:#15803d; --c-ideia:#c026a3;
+    --tx:#1c1830; --mut:#6a6585; --ac:#5b3fe0; --ring:#5b3fe0; --warn:#b36b00; --tag-l:34%;
   }
 }
 *{box-sizing:border-box}
@@ -30,18 +29,23 @@ button,input{font:inherit;color:inherit}
 .skip:focus{top:12px}
 main{max-width:640px;margin:0 auto;padding:20px 20px 40px}
 
-/* Cabeçalho do dia */
+/* Topo */
 .top{display:flex;align-items:center;gap:8px;margin-bottom:18px}
-.top .sp{flex:1}
-.icon-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
+.icon-btn{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
   background:var(--surface);cursor:pointer;transition:background-color .15s,border-color .15s}
 .icon-btn:hover{background:var(--surface-2);border-color:var(--ac)}
 .icon-btn:active{transform:scale(.96)}
 .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.today-btn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;
+.today-btn{flex:none;height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;
   font-weight:600;transition:background-color .15s,border-color .15s}
 .today-btn:hover{background:var(--surface-2);border-color:var(--ac)}
+.search{flex:1;min-width:0;height:40px;padding:0 12px 0 36px;border-radius:12px;border:1px solid var(--line);background:var(--surface)
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d9ab3' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") 11px center/16px no-repeat;
+  transition:border-color .15s}
+.search:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+.search::placeholder{color:var(--mut)}
 
+/* Dia */
 .hero{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px}
 .big{font-size:72px;line-height:.9;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--ac)}
 .hero h1{margin:0;font-size:22px;line-height:1.2;font-weight:650;text-transform:capitalize;text-wrap:balance}
@@ -52,33 +56,33 @@ main{max-width:640px;margin:0 auto;padding:20px 20px 40px}
 .capture{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:22px;
   transition:border-color .15s,box-shadow .15s}
 .capture:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
-.types{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;padding:0;border:0}
-.types legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.types label{cursor:pointer}
-.types input{position:absolute;opacity:0;pointer-events:none}
-.types span{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;border:1px solid var(--line);
+.row{display:flex;align-items:center;gap:8px}
+.row #texto{flex:1;min-width:0;height:44px;padding:0 4px;background:transparent;border:0;font-size:16px}
+.row #texto:focus{outline:none}
+.row #texto::placeholder{color:var(--mut)}
+.pend{position:relative;flex:none;cursor:pointer}
+.pend input{position:absolute;opacity:0;pointer-events:none}
+.pend span{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);
   font-size:13px;font-weight:550;color:var(--mut);transition:background-color .15s,color .15s,border-color .15s}
-.types span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot)}
-.types label:hover span{color:var(--tx)}
-.types input:checked + span{background:color-mix(in srgb,var(--dot) 18%,transparent);border-color:var(--dot);color:var(--tx)}
-.types input:focus-visible + span{outline:2px solid var(--ring);outline-offset:2px}
-.row{display:flex;gap:8px}
-.row input{flex:1;min-width:0;height:44px;padding:0 4px;background:transparent;border:0;font-size:16px}
-.row input:focus{outline:none}
-.row input::placeholder{color:var(--mut)}
-.save{height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--ac);color:var(--ac-tx);font-weight:650;cursor:pointer;
+.pend span::before{content:"";width:12px;height:12px;border-radius:4px;border:2px solid currentColor}
+.pend:hover span{color:var(--tx)}
+.pend input:checked + span{background:color-mix(in srgb,var(--warn) 18%,transparent);border-color:var(--warn);color:var(--tx)}
+.pend input:checked + span::before{background:var(--warn);border-color:var(--warn)}
+.pend input:focus-visible + span{outline:2px solid var(--ring);outline-offset:2px}
+.save{flex:none;height:44px;padding:0 18px;border:0;border-radius:12px;background:var(--ac);color:var(--ac-tx);font-weight:650;cursor:pointer;
   transition:filter .15s,transform .1s}
 .save:hover{filter:brightness(1.12)}
 .save:active{transform:scale(.97)}
 .hint{margin:8px 4px 0;color:var(--mut);font-size:12px}
 kbd{font:inherit;padding:0 5px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2)}
 
-/* Seções */
+/* Listas */
 .sec{margin-bottom:20px}
 .sec h2{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;font-weight:650;letter-spacing:.08em;
   text-transform:uppercase;color:var(--mut)}
-.sec h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot)}
+.sec h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot,var(--ac))}
 .sec h2 .n{margin-left:auto;font-variant-numeric:tabular-nums;letter-spacing:0}
+.sec.late{--dot:var(--warn)}
 ul{list-style:none;margin:0;padding:0}
 li{display:flex;align-items:baseline;gap:10px;padding:8px 12px;border-radius:10px;overflow-wrap:anywhere}
 li:hover{background:var(--surface)}
@@ -87,8 +91,11 @@ li:hover{background:var(--surface)}
 li label{display:flex;align-items:baseline;gap:10px;cursor:pointer;width:100%}
 li input[type=checkbox]{flex:none;width:18px;height:18px;margin:0;align-self:center;accent-color:var(--ac);cursor:pointer}
 .done{color:var(--mut);text-decoration:line-through}
-.bar{height:4px;border-radius:4px;background:var(--surface-2);margin:2px 12px 8px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--c-tarefa);transform-origin:left;transition:transform .25s}
+.tag{display:inline;padding:0 7px;margin:0 1px;border:0;border-radius:99px;cursor:pointer;font-size:.9em;font-weight:600;
+  color:hsl(var(--h) 75% var(--tag-l));background:hsl(var(--h) 75% 55% / .16)}
+.tag:hover{background:hsl(var(--h) 75% 55% / .3)}
+.go{flex:none;padding:0;border:0;background:none;color:var(--ac);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.res-h{margin:0 0 10px;color:var(--mut);font-size:14px}
 
 footer{display:flex;align-items:center;gap:10px;margin-top:28px;padding-top:14px;border-top:1px solid var(--line);color:var(--mut);font-size:12px}
 footer .path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -101,10 +108,10 @@ footer a:hover{text-decoration:underline}
 <body>
 <a class="skip" href="#texto">Ir para o campo de anotação</a>
 <main>
-  <nav class="top" aria-label="Navegar entre dias">
+  <nav class="top" aria-label="Navegação">
     <button class="icon-btn" id="prev" type="button" aria-label="Dia anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
     <button class="icon-btn" id="next" type="button" aria-label="Próximo dia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
-    <span class="sp"></span>
+    <input class="search" id="busca" type="search" name="busca" autocomplete="off" aria-label="Buscar nas anotações" placeholder="Buscar em todos os dias…">
     <button class="today-btn" id="hoje" type="button">Hoje</button>
   </nav>
 
@@ -118,10 +125,11 @@ footer a:hover{text-decoration:underline}
 
   <form class="capture" id="f" autocomplete="off">
     <div class="row">
-      <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="O que apareceu agora…" spellcheck="true">
+      <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="O que apareceu agora… (use #tags)" spellcheck="true">
+      <label class="pend" title="A anotação volta nos dias seguintes até você concluir"><input type="checkbox" id="pend"><span>Pendente</span></label>
       <button class="save" type="submit">Anotar</button>
     </div>
-    <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> abre de qualquer lugar</p>
+    <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>K</kbd> busca · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> abre de qualquer lugar</p>
   </form>
 
   <div id="lista"></div>
@@ -137,77 +145,133 @@ footer a:hover{text-decoration:underline}
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
 const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const SECOES=[['Anotações','--c-nota']];
-const VAZIO={Anotações:'Nada anotado neste dia ainda. Escreva acima e aperte Enter.'};
-let cur=new Date();
+const parseDate=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const brDate=s=>{const [y,m,d]=s.split('-');return `${d}/${m}/${y}`};
 const post=(u,b)=>fetch(u,{method:'POST',body:JSON.stringify(b)});
+const get=async u=>(await fetch(u)).json();
 const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);
   return Math.ceil(((t-new Date(Date.UTC(t.getUTCFullYear(),0,1)))/864e5+1)/7)};
+let cur=new Date(), searching=false;
+
+// Texto com #tags clicáveis
+function rich(el,text){
+  text.split(/(#[\p{L}\p{N}_\/-]+)/u).forEach(part=>{
+    if(/^#[\p{L}\p{N}_\/-]+$/u.test(part)){
+      let h=0;for(const c of part.toLowerCase())h=(h*31+c.charCodeAt(0))%360;
+      const b=document.createElement('button');b.type='button';b.className='tag';b.style.setProperty('--h',h);b.textContent=part;
+      b.setAttribute('aria-label','Buscar '+part);
+      b.onclick=()=>{$('busca').value=part;runSearch()};
+      el.append(b);
+    }else if(part)el.append(document.createTextNode(part));
+  });
+}
+// Uma linha de anotação; `date` é o dia do arquivo (pode ser diferente do dia aberto)
+function item(it,date,showDate){
+  const li=document.createElement('li');
+  const t=it.text.replace(/^- /,'');
+  const task=t.match(/^\[( |x)\] (.*)/);
+  const body=task?task[2]:t;
+  const m=body.match(/^(\d{2}:\d{2}) (.*)/);
+  const label=showDate?date.slice(8)+'/'+date.slice(5,7):(m?m[1]:'');
+  const text=m?m[2]:body;
+  const txt=document.createElement('span');rich(txt,text);
+  if(task){
+    const lb=document.createElement('label');
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=task[1]==='x';cb.setAttribute('aria-label',text);
+    cb.onchange=async()=>{await post('/api/toggle',{date,idx:it.idx});$('status').textContent=cb.checked?'Pendência concluída':'Pendência reaberta';load()};
+    if(cb.checked)txt.className='done';
+    lb.append(cb);
+    if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;lb.append(tm)}
+    lb.append(txt);li.append(lb);
+  }else{
+    if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;li.append(tm)}
+    li.append(txt);
+  }
+  return li;
+}
+function section(titulo,cls,count){
+  const sec=document.createElement('section');sec.className='sec '+(cls||'');
+  const h=document.createElement('h2');h.textContent=titulo;
+  if(count!=null){const n=document.createElement('span');n.className='n';n.textContent=count;h.append(n)}
+  sec.append(h);return sec;
+}
 
 async function load(){
+  if(searching)return;
   const ds=fmt(cur);
-  const dtf=(o)=>new Intl.DateTimeFormat('pt-BR',o).format(cur);
+  const dtf=o=>new Intl.DateTimeFormat('pt-BR',o).format(cur);
   $('dia').textContent=cur.getDate();
   $('titulo').textContent=dtf({weekday:'long'});
   $('mes').textContent=dtf({month:'long',year:'numeric'});
   $('semana').textContent='Semana '+isoWeek(cur);
   document.title=`Agenda · ${dtf({day:'numeric',month:'short'})}`;
-  let r;
-  try{ r=await (await fetch('/api/day?date='+ds)).json(); }catch{ $('status').textContent='Não consegui ler o dia. Reabra o app.'; return; }
+  let r,pend;
+  try{[r,pend]=await Promise.all([get('/api/day?date='+ds),get('/api/pending?before='+ds)])}
+  catch{$('status').textContent='Não consegui ler o dia. Reabra o app.';return}
   $('path').textContent=r.rel||'Este dia ainda não tem arquivo. Ele nasce na primeira anotação.';
   const obs=$('obs');
   if(r.rel){obs.hidden=false;obs.href=`obsidian://open?vault=${encodeURIComponent(r.vault)}&file=${encodeURIComponent(r.rel.replace(/\.md$/,''))}`}else obs.hidden=true;
 
   const lista=$('lista');lista.textContent='';
-  SECOES.forEach(([nome,cor])=>{
-    const items=Object.values(r.sections).flat();
-    const sec=document.createElement('section');sec.className='sec';sec.style.setProperty('--dot',`var(${cor})`);
-    const h=document.createElement('h2');h.textContent=nome;
-    if(nome==='Tarefas'&&items.length){
-      const feitas=items.filter(i=>/^- \[x\]/.test(i.text)).length;
-      const n=document.createElement('span');n.className='n';n.textContent=`${feitas} de ${items.length}`;h.append(n);
-      sec.append(h);
-      const bar=document.createElement('div');bar.className='bar';const i=document.createElement('i');
-      i.style.transform=`scaleX(${feitas/items.length})`;bar.append(i);sec.append(bar);
-    }else sec.append(h);
-    if(!items.length){const p=document.createElement('p');p.className='empty';p.textContent=VAZIO[nome];sec.append(p)}
-    else{
-      const ul=document.createElement('ul');
-      items.forEach(it=>{
-        const li=document.createElement('li');const t=it.text.replace(/^- /,'');
-        const task=t.match(/^\[( |x)\] (.*)/);
-        if(task){
-          const lb=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.checked=task[1]==='x';
-          cb.setAttribute('aria-label',task[2]);
-          cb.onchange=async()=>{await post('/api/toggle',{date:ds,idx:it.idx});$('status').textContent=cb.checked?'Tarefa concluída':'Tarefa reaberta';load()};
-          const sp=document.createElement('span');sp.textContent=task[2];if(cb.checked)sp.className='done';
-          lb.append(cb,sp);li.append(lb);
-        }else{
-          const m=t.match(/^(\d{2}:\d{2}) (.*)/);
-          if(m){const tm=document.createElement('span');tm.className='time';tm.textContent=m[1];li.append(tm);
-            const sp=document.createElement('span');sp.textContent=m[2];li.append(sp)}
-          else li.textContent=t;
-        }
-        ul.append(li);
-      });
-      sec.append(ul);
-    }
-    lista.append(sec);
-  });
+  if(pend.length){
+    const sec=section('Pendentes de dias anteriores','late',pend.length);
+    const ul=document.createElement('ul');
+    pend.forEach(p=>ul.append(item(p,p.date,true)));
+    sec.append(ul);lista.append(sec);
+  }
+  const items=Object.values(r.sections).flat();
+  const abertas=items.filter(i=>/^- \[ \]/.test(i.text)).length;
+  const sec=section('Anotações',null,abertas?`${abertas} pendente${abertas>1?'s':''}`:null);
+  if(!items.length){const p=document.createElement('p');p.className='empty';p.textContent='Nada anotado neste dia ainda. Escreva acima e aperte Enter.';sec.append(p)}
+  else{const ul=document.createElement('ul');items.forEach(it=>ul.append(item(it,ds,false)));sec.append(ul)}
+  lista.append(sec);
 }
+
+// Busca em todos os dias
+let timer;
+async function runSearch(){
+  clearTimeout(timer);
+  const q=$('busca').value.trim();
+  if(!q){searching=false;load();return}
+  searching=true;
+  const res=await get('/api/search?q='+encodeURIComponent(q));
+  if($('busca').value.trim()!==q)return;
+  const lista=$('lista');lista.textContent='';
+  const h=document.createElement('p');h.className='res-h';
+  h.textContent=res.length?`${res.length}${res.length>=200?'+':''} resultado${res.length>1?'s':''} para “${q}”`:`Nenhum resultado para “${q}”. Tente outra palavra ou uma #tag.`;
+  lista.append(h);
+  if(res.length){
+    const ul=document.createElement('ul');
+    res.forEach(r=>{
+      const li=item(r,r.date,false);
+      const go=document.createElement('button');go.type='button';go.className='go';go.textContent=brDate(r.date);
+      go.setAttribute('aria-label','Abrir o dia '+brDate(r.date));
+      go.onclick=()=>{cur=parseDate(r.date);$('busca').value='';searching=false;load();$('texto').focus()};
+      const first=li.firstChild;
+      if(first.tagName==='LABEL'){first.before(go)}else li.prepend(go);
+      ul.append(li);
+    });
+    lista.append(ul);
+  }
+  $('status').textContent=`${res.length} resultados`;
+}
+$('busca').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(runSearch,200)});
+$('busca').addEventListener('keydown',e=>{if(e.key==='Escape'){$('busca').value='';runSearch();$('texto').focus()}});
 
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const t=$('texto').value.trim();if(!t)return;
-  await post('/api/add',{date:fmt(cur),texto:t});
-  $('texto').value='';$('status').textContent='Anotação salva';
+  await post('/api/add',{date:fmt(cur),texto:t,pendente:$('pend').checked});
+  $('texto').value='';$('pend').checked=false;$('status').textContent='Anotação salva';
+  if(searching){$('busca').value='';searching=false}
   await load();$('texto').focus();
 });
-$('prev').onclick=()=>{cur.setDate(cur.getDate()-1);load()};
-$('next').onclick=()=>{cur.setDate(cur.getDate()+1);load()};
-$('hoje').onclick=()=>{cur=new Date();load();$('texto').focus()};
-window.addEventListener('focus-capture',()=>{ if(fmt(cur)!==fmt(new Date())){cur=new Date();load()} $('texto').focus() });
-window.addEventListener('focus',()=>{ load() });
+$('prev').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDate()-1);load()};
+$('next').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDate()+1);load()};
+$('hoje').onclick=()=>{$('busca').value='';searching=false;cur=new Date();load();$('texto').focus()};
+window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('busca').focus();$('busca').select()}});
+window.addEventListener('focus-capture',()=>{if(fmt(cur)!==fmt(new Date())){cur=new Date()} $('busca').value='';searching=false;load();$('texto').focus()});
+window.addEventListener('focus',()=>{load()});
 load();
 </script>
 </body>

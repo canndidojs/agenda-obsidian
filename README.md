@@ -25,6 +25,9 @@ O vault é descoberto sozinho a partir da configuração do Obsidian (o vault qu
 ## Uso
 
 - Escreva e aperte Enter: a anotação entra com a hora.
+- `#tags` no texto viram etiquetas coloridas (e o Obsidian as indexa). Clicar numa tag busca por ela.
+- `Ctrl+K` busca em todos os dias, sem diferenciar acentos nem maiúsculas.
+- Marcar "Pendente" grava a anotação como `- [ ]`. Ela reaparece nos dias seguintes, em "Pendentes de dias anteriores", até ser concluída.
 - `Ctrl+Alt+N` abre a janela de qualquer lugar.
 - Fechar a janela mantém o app na bandeja. Para encerrar, use "Sair" no ícone da bandeja.
 - Para iniciar com o Windows, coloque um atalho para `electron.exe "<pasta do app>" --hidden` em `shell:startup`.
