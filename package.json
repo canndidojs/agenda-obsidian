@@ -1,19 +1,38 @@
-﻿{
-    "name":  "agenda-obsidian",
-    "version":  "1.0.0",
-    "description":  "Agenda diária ligada ao Obsidian",
-    "main":  "main.js",
-    "scripts":  {
-                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1",
-                    "start":  "electron ."
-                },
-    "keywords":  [
-
-                 ],
-    "author":  "",
-    "license":  "ISC",
-    "type":  "commonjs",
-    "devDependencies":  {
-                            "electron":  "^45.3.3"
-                        }
+{
+    "name": "agenda-obsidian",
+    "version": "1.0.0",
+    "description": "Anotaí: anotações do dia ligadas ao Obsidian",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "electron .",
+        "dist": "electron-builder --win nsis"
+    },
+    "build": {
+        "appId": "agenda-obsidian",
+        "productName": "Anotaí",
+        "artifactName": "Anotai-Setup-${version}.exe",
+        "directories": { "output": "dist" },
+        "files": ["main.js", "preload.js", "server.js", "index.html", "quick.html", "shared.js", "assets/**"],
+        "win": { "target": "nsis", "icon": "assets/app.ico" },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true,
+            "language": "1046",
+            "installerIcon": "assets/app.ico",
+            "uninstallerIcon": "assets/app.ico",
+            "shortcutName": "Anotaí",
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        }
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "devDependencies": {
+        "electron": "^45.3.3",
+        "electron-builder": "^26.18.0"
+    }
 }
