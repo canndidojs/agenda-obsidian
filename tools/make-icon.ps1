@@ -4,7 +4,7 @@ New-Item -ItemType Directory -Force $out | Out-Null
 
 function RoundRect($x, $y, $w, $h, $r) {
     $p = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $d = $r * 2
+    $d = [Math]::Max($r * 2, 0.01)
     $p.AddArc($x, $y, $d, $d, 180, 90)
     $p.AddArc($x + $w - $d, $y, $d, $d, 270, 90)
     $p.AddArc($x + $w - $d, $y + $h - $d, $d, $d, 0, 90)
@@ -14,48 +14,37 @@ function RoundRect($x, $y, $w, $h, $r) {
 }
 function C($hex) { [System.Drawing.ColorTranslator]::FromHtml($hex) }
 
+# Ícone plano: fundo preto, folha de calendário em contorno branco, faixa e check laranja
 function Render([int]$s) {
     $bmp = New-Object System.Drawing.Bitmap $s, $s
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = 'AntiAlias'
     $g.PixelOffsetMode = 'HighQuality'
     $g.Clear([System.Drawing.Color]::Transparent)
+    $orange = C '#FF6A2B'
 
-    # Base: quadrado arredondado com degradê índigo
-    $base = RoundRect 0 0 $s $s ($s * 0.23)
-    $grad = New-Object System.Drawing.Drawing2D.LinearGradientBrush ((New-Object System.Drawing.Point 0, 0), (New-Object System.Drawing.Point $s, $s), (C '#8B6CFF'), (C '#3E24C9'))
-    $g.FillPath($grad, $base)
+    $g.FillPath((New-Object System.Drawing.SolidBrush (C '#0F0F10')), (RoundRect 0 0 $s $s ($s * 0.12)))
 
-    # Sombra suave da folha
-    $sh = RoundRect ($s * 0.20) ($s * 0.27) ($s * 0.60) ($s * 0.58) ($s * 0.085)
-    $g.FillPath((New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(60, 20, 0, 90))), $sh)
+    # Faixa laranja no topo da folha
+    $g.FillRectangle((New-Object System.Drawing.SolidBrush $orange), $s * 0.20, $s * 0.26, $s * 0.60, $s * 0.14)
 
-    # Folha branca
-    $card = RoundRect ($s * 0.20) ($s * 0.24) ($s * 0.60) ($s * 0.58) ($s * 0.085)
-    $g.FillPath([System.Drawing.Brushes]::White, $card)
-
-    # Faixa âmbar no topo da folha
-    $g.SetClip($card)
-    $g.FillRectangle((New-Object System.Drawing.SolidBrush (C '#FFB547')), $s * 0.20, $s * 0.24, $s * 0.60, $s * 0.15)
-    $g.ResetClip()
+    # Contorno branco da folha
+    $w = [Math]::Max($s * 0.055, 1.2)
+    $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), $w
+    $pen.LineJoin = 'Miter'
+    $g.DrawRectangle($pen, $s * 0.20 + $w / 2, $s * 0.26 + $w / 2, $s * 0.60 - $w, $s * 0.56 - $w)
 
     # Argolas
-    foreach ($cx in 0.34, 0.66) {
-        $ring = RoundRect ($s * ($cx - 0.025)) ($s * 0.17) ($s * 0.05) ($s * 0.12) ($s * 0.025)
-        $g.FillPath((New-Object System.Drawing.SolidBrush (C '#2A1790')), $ring)
-    }
+    $g.FillRectangle([System.Drawing.Brushes]::White, $s * 0.33, $s * 0.17, $s * 0.055, $s * 0.15)
+    $g.FillRectangle([System.Drawing.Brushes]::White, $s * 0.615, $s * 0.17, $s * 0.055, $s * 0.15)
 
-    # Check + linhas de anotação
-    $pen = New-Object System.Drawing.Pen (C '#4B2FD6'), ($s * 0.045)
-    $pen.StartCap = 'Round'; $pen.EndCap = 'Round'; $pen.LineJoin = 'Round'
-    $g.DrawLines($pen, @(
-        (New-Object System.Drawing.PointF ($s * 0.27), ($s * 0.54)),
-        (New-Object System.Drawing.PointF ($s * 0.32), ($s * 0.59)),
-        (New-Object System.Drawing.PointF ($s * 0.41), ($s * 0.48))))
-    $lp = New-Object System.Drawing.Pen (C '#C9C3E8'), ($s * 0.04)
-    $lp.StartCap = 'Round'; $lp.EndCap = 'Round'
-    $g.DrawLine($lp, $s * 0.49, $s * 0.53, $s * 0.72, $s * 0.53)
-    $g.DrawLine($lp, $s * 0.27, $s * 0.69, $s * 0.72, $s * 0.69)
+    # Check laranja
+    $cp = New-Object System.Drawing.Pen $orange, ([Math]::Max($s * 0.07, 1.5))
+    $cp.LineJoin = 'Miter'; $cp.StartCap = 'Flat'; $cp.EndCap = 'Flat'
+    $g.DrawLines($cp, @(
+        (New-Object System.Drawing.PointF ($s * 0.34), ($s * 0.62)),
+        (New-Object System.Drawing.PointF ($s * 0.455), ($s * 0.72)),
+        (New-Object System.Drawing.PointF ($s * 0.67), ($s * 0.52))))
     $g.Dispose()
     $bmp
 }
@@ -66,11 +55,9 @@ function PngBytes($bmp) {
     , $ms.ToArray()
 }
 
-# PNG grande
 $big = Render 512
 $big.Save((Join-Path $out 'icon.png'), [System.Drawing.Imaging.ImageFormat]::Png)
 
-# ICO com vários tamanhos (PNG embutido)
 $sizes = 16, 24, 32, 48, 64, 128, 256
 $imgs = foreach ($s in $sizes) { , (PngBytes (Render $s)) }
 $ms = New-Object System.IO.MemoryStream
