@@ -1,0 +1,19 @@
+﻿{
+    "name":  "agenda-obsidian",
+    "version":  "1.0.0",
+    "description":  "Agenda diária ligada ao Obsidian",
+    "main":  "main.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1",
+                    "start":  "electron ."
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "devDependencies":  {
+                            "electron":  "^45.3.3"
+                        }
+}
