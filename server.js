@@ -4,6 +4,12 @@ const http = require('http'), fs = require('fs'), path = require('path'), os = r
 // essa pasta como vault no Obsidian, se a pessoa quiser.
 function findVault() {
   if (process.env.VAULT) return process.env.VAULT;
+  // pasta escolhida no menu da bandeja (guardada em config.json pelo app)
+  try {
+    const cfg = process.env.AGENDA_CONFIG || path.join(process.env.APPDATA || '', 'agenda-obsidian', 'config.json');
+    const escolhida = JSON.parse(fs.readFileSync(cfg, 'utf8').replace(/^﻿/, '')).vault;
+    if (escolhida) return escolhida;
+  } catch (e) { /* sem pasta escolhida */ }
   try {
     const cfg = path.join(process.env.APPDATA || '', 'obsidian', 'obsidian.json');
     const vaults = Object.values(JSON.parse(fs.readFileSync(cfg, 'utf8')).vaults || {});
@@ -209,3 +215,5 @@ http.createServer(async (req, res) => {
     res.end(fs.readFileSync(path.join(__dirname, arquivo)));
   } catch (e) { res.writeHead(500); res.end(String(e)); }
 }).listen(PORT, '127.0.0.1', () => console.log(`Agenda em http://localhost:${PORT}  ->  ${ROOT}`));
+
+module.exports = { vault: VAULT };
