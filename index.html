@@ -304,7 +304,7 @@ async function load(){
   catch{$('status').textContent='Não consegui ler o dia. Reabra o app.';return}
   $('path').textContent=r.rel||'Este dia ainda não tem arquivo. Ele nasce na primeira anotação.';
   const obs=$('obs');
-  if(r.rel){obs.hidden=false;obs.href=`obsidian://open?vault=${encodeURIComponent(r.vault)}&file=${encodeURIComponent(r.rel.replace(/\.md$/,''))}`}else obs.hidden=true;
+  if(r.rel&&r.obsidian){obs.hidden=false;obs.href=`obsidian://open?vault=${encodeURIComponent(r.vault)}&file=${encodeURIComponent(r.rel.replace(/\.md$/,''))}`}else obs.hidden=true;
 
   const lista=$('lista');lista.textContent='';
   if(pend.length){

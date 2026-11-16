@@ -1,5 +1,7 @@
-const http = require('http'), fs = require('fs'), path = require('path');
-// Vault: variável de ambiente VAULT, ou o vault aberto no Obsidian (lido da config do próprio Obsidian).
+const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
+// Onde ficam as notas: variável de ambiente VAULT, ou o vault aberto no Obsidian (lido da config do próprio
+// Obsidian). Sem Obsidian, usa uma pasta comum em Documentos: são arquivos Markdown, e depois dá para abrir
+// essa pasta como vault no Obsidian, se a pessoa quiser.
 function findVault() {
   if (process.env.VAULT) return process.env.VAULT;
   try {
@@ -8,10 +10,12 @@ function findVault() {
     const v = vaults.find(x => x.open) || vaults[0];
     if (v && v.path) return v.path;
   } catch (e) { /* sem config do Obsidian */ }
-  throw new Error('Vault não encontrado. Defina a variável de ambiente VAULT com o caminho do vault.');
+  return path.join(os.homedir(), 'Documents', 'Agenda Notas');
 }
 const VAULT = findVault();
 const ROOT = path.join(VAULT, 'Agenda');
+// Só mostra o atalho "Abrir no Obsidian" se a pasta realmente for um vault do Obsidian
+const hasObsidian = () => fs.existsSync(path.join(VAULT, '.obsidian'));
 const PORT = 3377;
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
@@ -123,13 +127,13 @@ function restoreEntry(dateStr, idx, line) {
 function readDay(dateStr) {
   const p = paths(dateStr);
   const rel = path.relative(VAULT, p.day).replace(/\\/g, '/');
-  if (!fs.existsSync(p.day)) return { sections: {}, rel: null, vault: path.basename(VAULT) };
+  if (!fs.existsSync(p.day)) return { sections: {}, rel: null, vault: path.basename(VAULT), obsidian: hasObsidian() };
   const sections = {}; let cur = null;
   fs.readFileSync(p.day, 'utf8').split('\n').forEach((l, idx) => {
     if (l.startsWith('## ')) { cur = l.slice(3).trim(); sections[cur] = []; }
     else if (cur && l.trim()) sections[cur].push({ idx, text: l });
   });
-  return { sections, rel, vault: path.basename(VAULT) };
+  return { sections, rel, vault: path.basename(VAULT), obsidian: hasObsidian() };
 }
 function toggle(dateStr, idx) {
   const p = paths(dateStr), lines = fs.readFileSync(p.day, 'utf8').split('\n');

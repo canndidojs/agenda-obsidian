@@ -22,6 +22,8 @@ npm start
 
 O vault é descoberto sozinho a partir da configuração do Obsidian (o vault que estiver aberto). Para usar outro, defina a variável de ambiente `VAULT` com o caminho dele.
 
+**Sem Obsidian?** Funciona igual: as anotações são arquivos Markdown comuns e ficam em `Documentos\Agenda Notas\Agenda`. O link "Abrir no Obsidian" só aparece quando a pasta é um vault do Obsidian. Se instalar o Obsidian depois, abra a pasta `Agenda Notas` como vault e tudo já estará lá (os links `[[ ]]` e os resumos da semana passam a funcionar).
+
 ## Uso
 
 - Escreva e aperte Enter: a anotação entra com a hora.
