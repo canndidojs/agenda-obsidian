@@ -166,6 +166,7 @@ function linesOf(f) { return fs.readFileSync(f, 'utf8').split('\n'); }
 function search(q) {
   const n = norm(q.trim()), out = [];
   if (!n) return out;
+  for (const f of readFixas()) if (norm(f.text).includes(n)) out.push({ fixa: true, idx: f.idx, text: f.text });
   for (const { date, file } of dayFiles()) {
     linesOf(file).forEach((l, idx) => {
       if (l.startsWith('- ') && norm(l).includes(n)) out.push({ date, idx, text: l });
@@ -194,6 +195,70 @@ function pending(before) {
   }
   return out;
 }
+// Anotações fixas: ficam num arquivo só (Agenda/Fixas.md), aparecem em todos os dias até você apagar
+const FIXAS = path.join(ROOT, 'Fixas.md');
+const FIXAS_CAB = ['---', 'tags: [agenda-fixas]', '---', '# Fixas', '', ''];
+const limpa = t => String(t).replace(/\s*\n\s*/g, ' ').trim();
+function fixasLines() { try { return fs.readFileSync(FIXAS, 'utf8').split('\n'); } catch (e) { return null; } }
+function readFixas() {
+  const out = [];
+  (fixasLines() || []).forEach((l, idx) => { if (l.startsWith('- ')) out.push({ idx, text: l }); });
+  return out;
+}
+function saveFixas(lines) { fs.mkdirSync(ROOT, { recursive: true }); fs.writeFileSync(FIXAS, lines.join('\n')); }
+function addFixa(texto) {
+  const lines = fixasLines() || [...FIXAS_CAB];
+  while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+  lines.push('- ' + limpa(texto), '');
+  saveFixas(lines);
+}
+function editFixa(idx, old, texto) {
+  const lines = fixasLines();
+  if (!lines || lines[idx] !== old) return false;
+  lines[idx] = '- ' + limpa(texto);
+  saveFixas(lines); return true;
+}
+function deleteFixa(idx, old) {
+  const lines = fixasLines();
+  if (!lines || lines[idx] !== old) return false;
+  lines.splice(idx, 1); saveFixas(lines); return true;
+}
+function restoreFixa(idx, line) {
+  if (typeof line !== 'string' || !line.startsWith('- ')) return false;
+  const lines = fixasLines() || [...FIXAS_CAB];
+  lines.splice(Math.min(idx, lines.length), 0, line); saveFixas(lines); return true;
+}
+// Fixar uma anotação que já existe: vira fixa (sem hora nem caixinha) e sai do dia
+function pinEntry(dateStr, idx, old) {
+  const p = paths(dateStr), lines = fs.readFileSync(p.day, 'utf8').split('\n');
+  if (lines[idx] !== old || !old.startsWith('- ')) return null;
+  const texto = old.replace(/^- (\[[ x]\] )?(\d{2}:\d{2} )?/, '');
+  if (!limpa(texto)) return null;
+  addFixa(texto);
+  deleteEntry(dateStr, idx, old);
+  const f = readFixas().pop();
+  return { ok: true, idx: f.idx, line: f.text };
+}
+// Desafixar: a fixa volta como anotação comum no dia que está aberto e sai de Fixas.md
+function unpinEntry(dateStr, idx, old) {
+  const fl = fixasLines();
+  if (!fl || fl[idx] !== old || !old.startsWith('- ')) return null;
+  const texto = limpa(old.slice(2));
+  if (!texto) return null;
+  const p = ensureDay(dateStr), sec = 'Anotações';
+  const lines = fs.readFileSync(p.day, 'utf8').split('\n');
+  let i = lines.findIndex(l => l.trim() === `## ${sec}`);
+  if (i < 0) { lines.push('', `## ${sec}`); i = lines.length - 1; }
+  let j = i + 1;
+  while (j < lines.length && !lines[j].startsWith('## ')) j++;
+  while (j > i + 1 && lines[j - 1].trim() === '') j--;
+  const linha = '- ' + texto;
+  lines.splice(j, 0, linha);
+  fs.writeFileSync(p.day, lines.join('\n'));
+  rebuild(dateStr);
+  deleteFixa(idx, old);
+  return { ok: true, idx: j, line: linha };
+}
 function body(req) { return new Promise(r => { let b = ''; req.on('data', c => b += c); req.on('end', () => r(JSON.parse(b || '{}'))); }); }
 
 http.createServer(async (req, res) => {
@@ -204,6 +269,13 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/api/search') return json(search(u.searchParams.get('q') || ''));
     if (u.pathname === '/api/tags') return json(tagsList());
     if (u.pathname === '/api/pending') return json(pending(u.searchParams.get('before')));
+    if (u.pathname === '/api/fixas') return json(readFixas());
+    if (u.pathname === '/api/fixas/pin' && req.method === 'POST') { const b = await body(req); return json(pinEntry(b.date, b.idx, b.old) || { ok: false }); }
+    if (u.pathname === '/api/fixas/unpin' && req.method === 'POST') { const b = await body(req); return json(unpinEntry(b.date, b.idx, b.old) || { ok: false }); }
+    if (u.pathname === '/api/fixas/add' && req.method === 'POST') { const b = await body(req); addFixa(b.texto); return json({ ok: 1 }); }
+    if (u.pathname === '/api/fixas/edit' && req.method === 'POST') { const b = await body(req); return json({ ok: editFixa(b.idx, b.old, b.texto) }); }
+    if (u.pathname === '/api/fixas/delete' && req.method === 'POST') { const b = await body(req); return json({ ok: deleteFixa(b.idx, b.old) }); }
+    if (u.pathname === '/api/fixas/restore' && req.method === 'POST') { const b = await body(req); return json({ ok: restoreFixa(b.idx, b.line) }); }
     if (u.pathname === '/api/add' && req.method === 'POST') { const b = await body(req); addEntry(b.date, !!b.pendente, b.texto); return json({ ok: 1 }); }
     if (u.pathname === '/api/edit' && req.method === 'POST') { const b = await body(req); return json({ ok: editEntry(b.date, b.idx, b.old, b.texto) }); }
     if (u.pathname === '/api/delete' && req.method === 'POST') { const b = await body(req); return json({ ok: deleteEntry(b.date, b.idx, b.old) }); }

@@ -97,6 +97,8 @@ kbd{font:inherit;color:var(--tx)}
   font-size:var(--t-meta);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
 .sec h2 .n{margin-left:auto;font:var(--t-meta) var(--mono);letter-spacing:0;text-transform:none}
 .sec.late h2{color:var(--warn)}
+.sec.pinned h2{color:var(--ac-fg)}
+.pin-mark{grid-column:1;grid-row:1;color:var(--ac-fg);font:var(--t-meta) var(--mono)}
 ul{list-style:none;margin:0;padding:0}
 /* cada linha: [hora/data 60px][caixinha 28px][texto][ações]; o texto começa sempre na coluna de 88px */
 li{display:grid;grid-template-columns:calc(var(--gutter) - 28px) 28px minmax(0,1fr) auto;align-items:baseline;padding:var(--s2) var(--s3);margin:0 calc(var(--s3) * -1);border-radius:var(--r);overflow-wrap:anywhere}
@@ -168,6 +170,7 @@ footer a:hover{text-decoration:underline;text-underline-offset:3px}
       <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="O que apareceu agora…" spellcheck="true"
         role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sug">
       <label class="pend" title="A anotação volta nos dias seguintes até você concluir"><input type="checkbox" id="pend"><span>Pendente</span></label>
+      <label class="pend" title="A anotação fica no topo de todos os dias até você apagar"><input type="checkbox" id="fixa"><span>Fixa</span></label>
       <button class="save" type="submit">Anotar</button>
     </div>
     <ul id="sug" role="listbox" aria-label="Tags sugeridas" hidden></ul>
@@ -212,6 +215,7 @@ function rich(el,text){
 // Uma linha de anotação; `date` é o dia do arquivo (pode ser diferente do dia aberto)
 const ICON={
   edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/><path d="M9 3h6l-1 6 4 4H6l4-4z"/></svg>',
   del:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>'
 };
 function mkBtn(cls,label,icon,fn){
@@ -272,6 +276,12 @@ function item(it,date,showDate,actions,goFn){
     const acts=document.createElement('span');acts.className='acts';
     acts.append(
       mkBtn('','Editar anotação',ICON.edit,()=>startEdit(li,it,date,text)),
+      mkBtn('','Fixar anotação',ICON.pin,async()=>{
+        const r=await post('/api/fixas/pin',{date,idx:it.idx,old:it.text}).then(x=>x.json());
+        if(!r.ok){$('status').textContent='O arquivo mudou; recarreguei o dia';load();return}
+        await load();
+        toast('Anotação fixada.',async()=>{await post('/api/fixas/delete',{idx:r.idx,old:r.line});await post('/api/restore',{date,idx:it.idx,line:it.text})});
+      }),
       mkBtn('del','Apagar anotação',ICON.del,async()=>{
         const r=await post('/api/delete',{date,idx:it.idx,old:it.text}).then(x=>x.json());
         if(!r.ok){$('status').textContent='O arquivo mudou; recarreguei o dia';load();return}
@@ -289,6 +299,46 @@ function section(titulo,cls,count){
   sec.append(h);return sec;
 }
 
+// Fixas: texto puro com #tags, editar e apagar (com desfazer); não têm hora nem caixinha
+const again=()=>searching?runSearch():load();
+function fixaItem(it){
+  const li=document.createElement('li');
+  const text=it.text.replace(/^- /,'');
+  const mk=document.createElement('span');mk.className='pin-mark';mk.textContent='fixa';
+  const txt=document.createElement('span');txt.className='txt';rich(txt,text);
+  const acts=document.createElement('span');acts.className='acts';
+  acts.append(
+    mkBtn('','Editar anotação fixa',ICON.edit,()=>{
+      const inp=document.createElement('input');inp.className='edit';inp.value=text;inp.setAttribute('aria-label','Editar anotação fixa');
+      txt.replaceWith(inp);acts.remove();inp.focus();inp.select();
+      let done=false;
+      const save=async()=>{
+        if(done)return;done=true;
+        const v=inp.value.trim();
+        if(v&&v!==text){const r=await post('/api/fixas/edit',{idx:it.idx,old:it.text,texto:v}).then(x=>x.json());
+          $('status').textContent=r.ok?'Fixa atualizada':'O arquivo mudou; recarreguei as fixas';loadTags()}
+        again();
+      };
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save()}else if(e.key==='Escape'){done=true;again()}});
+      inp.addEventListener('blur',save);
+    }),
+    mkBtn('','Desafixar anotação',ICON.pin,async()=>{
+      const date=fmt(cur);
+      const r=await post('/api/fixas/unpin',{date,idx:it.idx,old:it.text}).then(x=>x.json());
+      if(!r.ok){$('status').textContent='O arquivo mudou; recarreguei as fixas';again();return}
+      await again();
+      toast('Anotação desafixada.',async()=>{await post('/api/delete',{date,idx:r.idx,old:r.line});await post('/api/fixas/restore',{idx:it.idx,line:it.text})});
+    }),
+    mkBtn('del','Apagar anotação fixa',ICON.del,async()=>{
+      const r=await post('/api/fixas/delete',{idx:it.idx,old:it.text}).then(x=>x.json());
+      if(!r.ok){$('status').textContent='O arquivo mudou; recarreguei as fixas';again();return}
+      await again();
+      toast('Fixa apagada.',()=>post('/api/fixas/restore',{idx:it.idx,line:it.text}));
+    }));
+  li.append(mk,txt,acts);
+  return li;
+}
+
 async function load(){
   if(searching)return;
   const ds=fmt(cur);
@@ -299,14 +349,20 @@ async function load(){
   $('mes').textContent=dtf({month:'long',year:'numeric'});
   $('semana').textContent='Semana '+isoWeek(cur);
   document.title=`Anotaí · ${dtf({day:'numeric',month:'short'})}`;
-  let r,pend;
-  try{[r,pend]=await Promise.all([get('/api/day?date='+ds),get('/api/pending?before='+ds)])}
+  let r,pend,fixas;
+  try{[r,pend,fixas]=await Promise.all([get('/api/day?date='+ds),get('/api/pending?before='+ds),get('/api/fixas')])}
   catch{$('status').textContent='Não consegui ler o dia. Reabra o app.';return}
   $('path').textContent=r.rel||'Este dia ainda não tem arquivo. Ele nasce na primeira anotação.';
   const obs=$('obs');
   if(r.rel&&r.obsidian){obs.hidden=false;obs.href=`obsidian://open?vault=${encodeURIComponent(r.vault)}&file=${encodeURIComponent(r.rel.replace(/\.md$/,''))}`}else obs.hidden=true;
 
   const lista=$('lista');lista.textContent='';
+  if(fixas.length){
+    const sec=section('Fixas','pinned',fixas.length);
+    const ul=document.createElement('ul');
+    fixas.forEach(f=>ul.append(fixaItem(f)));
+    sec.append(ul);lista.append(sec);
+  }
   if(pend.length){
     const sec=section('Pendentes de dias anteriores','late',pend.length);
     const ul=document.createElement('ul');
@@ -337,6 +393,7 @@ async function runSearch(){
   if(res.length){
     const ul=document.createElement('ul');
     res.forEach(r=>{
+      if(r.fixa){ul.append(fixaItem(r));return}
       const goFn=()=>{cur=parseDate(r.date);$('busca').value='';searching=false;load();$('texto').focus()};
       ul.append(item(r,r.date,false,false,goFn));
     });
@@ -389,12 +446,16 @@ $('texto').addEventListener('keydown',e=>{
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const t=$('texto').value.trim();if(!t)return;
-  await post('/api/add',{date:fmt(cur),texto:t,pendente:$('pend').checked});
-  $('texto').value='';$('pend').checked=false;$('status').textContent='Anotação salva';
+  if($('fixa').checked)await post('/api/fixas/add',{texto:t});
+  else await post('/api/add',{date:fmt(cur),texto:t,pendente:$('pend').checked});
+  $('status').textContent=$('fixa').checked?'Fixa salva':'Anotação salva';
+  $('texto').value='';$('pend').checked=false;$('fixa').checked=false;
   if(searching){$('busca').value='';searching=false}
   hideSug();loadTags();
   await load();$('texto').focus();
 });
+$('fixa').onchange=()=>{if($('fixa').checked)$('pend').checked=false};
+$('pend').onchange=()=>{if($('pend').checked)$('fixa').checked=false};
 $('prev').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDate()-1);load()};
 $('next').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDate()+1);load()};
 $('hoje').onclick=()=>{$('busca').value='';searching=false;cur=new Date();load();$('texto').focus()};
