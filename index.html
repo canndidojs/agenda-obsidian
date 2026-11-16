@@ -94,9 +94,7 @@ li label{display:flex;align-items:baseline;gap:10px;cursor:pointer;flex:1;min-wi
   border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #sug[hidden]{display:none}
 #sug li{display:flex;justify-content:space-between;gap:16px;padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:600}
-#sug li small{color:var(--mut);font-weight:400;font-variant-numeric:tabular-nums}
 #sug li[aria-selected=true]{background:var(--ac);color:var(--ac-tx)}
-#sug li[aria-selected=true] small{color:inherit;opacity:.8}
 .acts{display:flex;flex:none;gap:2px;margin-left:auto;align-self:center;opacity:0;transition:opacity .15s}
 li:hover .acts,li:focus-within .acts{opacity:1}
 .acts button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--mut);cursor:pointer}
@@ -150,7 +148,7 @@ footer a:hover{text-decoration:underline}
       <label class="pend" title="A anotação volta nos dias seguintes até você concluir"><input type="checkbox" id="pend"><span>Pendente</span></label>
       <button class="save" type="submit">Anotar</button>
     </div>
-    <ul id="sug" role="listbox" aria-label="Tags já usadas" hidden></ul>
+    <ul id="sug" role="listbox" aria-label="Tags sugeridas" hidden></ul>
     <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>K</kbd> busca · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> abre de qualquer lugar</p>
   </form>
 
@@ -325,6 +323,8 @@ $('busca').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(ru
 $('busca').addEventListener('keydown',e=>{if(e.key==='Escape'){$('busca').value='';runSearch();$('texto').focus()}});
 
 // Sugestão de tags ao digitar #
+const SUGESTOES=['#admin','#dev','#financeiro','#reunião','#cliente','#fornecedor','#pedido','#compras','#rh','#bug','#urgente','#ideia','#dúvida','#pagamento'];
+const semAcento=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let tags=[],sugItems=[],sugIdx=0;
 const tokenRe=/(^|\s)#([\p{L}\p{N}_\/-]*)$/u;
 async function loadTags(){try{tags=await get('/api/tags')}catch{}}
@@ -337,8 +337,7 @@ function paintSug(){
   const s=$('sug');s.textContent='';
   sugItems.forEach((t,i)=>{
     const li=document.createElement('li');li.id='sug-'+i;li.setAttribute('role','option');li.setAttribute('aria-selected',i===sugIdx);
-    const a=document.createElement('span');a.textContent=t.tag;const b=document.createElement('small');b.textContent=t.n+'×';
-    li.append(a,b);
+    li.textContent=t;
     li.addEventListener('mousedown',e=>{e.preventDefault();acceptSug(i)});
     s.append(li);
   });
@@ -347,13 +346,16 @@ function paintSug(){
 function showSug(){
   const tk=tagToken();
   if(!tk){hideSug();return}
-  sugItems=tags.filter(t=>t.tag.slice(1).startsWith(tk.q)&&t.tag.slice(1)!==tk.q).slice(0,6);
+  const q=semAcento(tk.q);
+  // Sugestões prontas primeiro; tags próprias já usadas só entram quando você já digitou algo
+  const usadas=q?tags.map(t=>t.tag).filter(t=>!SUGESTOES.includes(t)):[];
+  sugItems=[...SUGESTOES,...usadas].filter(t=>{const s=semAcento(t.slice(1));return s.startsWith(q)&&s!==q}).slice(0,8);
   if(!sugItems.length){hideSug();return}
   sugIdx=0;$('sug').hidden=false;$('texto').setAttribute('aria-expanded','true');paintSug();
 }
 function acceptSug(i){
   const inp=$('texto'),tk=tagToken();if(!tk)return;
-  const after=inp.value.slice(inp.selectionStart),ins=sugItems[i].tag+' ';
+  const after=inp.value.slice(inp.selectionStart),ins=sugItems[i]+' ';
   inp.value=inp.value.slice(0,tk.start)+ins+after.replace(/^ /,'');
   const pos=tk.start+ins.length;inp.setSelectionRange(pos,pos);hideSug();inp.focus();
 }
