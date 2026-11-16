@@ -32,9 +32,8 @@ body{margin:0;background:var(--bg);color:var(--tx);font:var(--t-body)/1.55 "Sego
 button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--ring);outline-offset:2px}
 ::selection{background:var(--ac);color:var(--ac-tx)}
-::-webkit-scrollbar{width:12px}
-::-webkit-scrollbar-thumb{background:var(--line);border:3px solid var(--bg)}
-::-webkit-scrollbar-thumb:hover{background:var(--mut)}
+html{scrollbar-width:none}
+::-webkit-scrollbar{display:none}
 .skip{position:absolute;left:var(--s3);top:-60px;background:var(--ac);color:var(--ac-tx);padding:var(--s2) var(--s3);border-radius:var(--r);z-index:10}
 .skip:focus{top:var(--s3)}
 main{max-width:640px;margin:0 auto;padding:var(--s5) var(--s5) 64px}

@@ -4,7 +4,8 @@ const path = require('path');
 if (!app.requestSingleInstanceLock()) { app.quit(); return; }
 
 let win = null, tray = null, quitting = false;
-const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
+const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'app.ico'));
+app.setAppUserModelId('agenda-obsidian');
 
 function showWindow() {
   if (!win) return;
@@ -34,7 +35,7 @@ app.whenReady().then(() => {
   require('./server.js');
   createWindow();
 
-  tray = new Tray(icon.resize({ width: 32, height: 32 }));
+  tray = new Tray(icon);
   tray.setToolTip('Agenda');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Abrir agenda', click: showWindow },

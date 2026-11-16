@@ -69,5 +69,5 @@ for ($i = 0; $i -lt $sizes.Count; $i++) {
 }
 foreach ($b in $imgs) { $bw.Write($b) }
 $bw.Flush()
-[System.IO.File]::WriteAllBytes((Join-Path $out 'icon.ico'), $ms.ToArray())
+[System.IO.File]::WriteAllBytes((Join-Path $out 'app.ico'), $ms.ToArray())
 Write-Output "ok: $out"
