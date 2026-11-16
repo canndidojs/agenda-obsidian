@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, globalShortcut, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, nativeImage, nativeTheme, shell } = require('electron');
 const path = require('path');
 
 if (!app.requestSingleInstanceLock()) { app.quit(); return; }
@@ -17,7 +17,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 520, height: 780, minWidth: 400, minHeight: 520,
     title: 'Agenda', icon, show: false,
-    backgroundColor: '#0f0f10',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
   });
