@@ -171,7 +171,7 @@ footer a:hover{text-decoration:underline;text-underline-offset:3px}
       <button class="save" type="submit">Anotar</button>
     </div>
     <ul id="sug" role="listbox" aria-label="Tags sugeridas" hidden></ul>
-    <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>K</kbd> busca · <kbd>Alt</kbd>+<kbd>←</kbd><kbd>→</kbd> dia · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> abre de qualquer lugar</p>
+    <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>K</kbd> busca · <kbd>Alt</kbd>+<kbd>←</kbd><kbd>→</kbd> dia · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> anota de qualquer lugar</p>
   </form>
 
   <div id="lista"></div>
@@ -184,6 +184,7 @@ footer a:hover{text-decoration:underline;text-underline-offset:3px}
 </main>
 <div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Desfazer</button></div>
 
+<script src="/shared.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
@@ -347,15 +348,9 @@ $('busca').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(ru
 $('busca').addEventListener('keydown',e=>{if(e.key==='Escape'){$('busca').value='';runSearch();$('texto').focus()}});
 
 // Sugestão de tags ao digitar #
-const SUGESTOES=['#admin','#dev','#financeiro','#reunião','#cliente','#fornecedor','#pedido','#compras','#rh','#bug','#urgente','#ideia','#dúvida','#pagamento'];
-const semAcento=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 let tags=[],sugItems=[],sugIdx=0;
-const tokenRe=/(^|\s)#([\p{L}\p{N}_\/-]*)$/u;
 async function loadTags(){try{tags=await get('/api/tags')}catch{}}
-function tagToken(){
-  const i=$('texto'),before=i.value.slice(0,i.selectionStart),m=before.match(tokenRe);
-  return m?{q:m[2].toLowerCase(),start:before.length-m[2].length-1}:null;
-}
+function tagToken(){return tokenDe($('texto'))}
 function hideSug(){const s=$('sug');s.hidden=true;s.textContent='';sugItems=[];$('texto').setAttribute('aria-expanded','false');$('texto').removeAttribute('aria-activedescendant')}
 function paintSug(){
   const s=$('sug');s.textContent='';
@@ -370,10 +365,7 @@ function paintSug(){
 function showSug(){
   const tk=tagToken();
   if(!tk){hideSug();return}
-  const q=semAcento(tk.q);
-  // Sugestões prontas primeiro; tags próprias já usadas só entram quando você já digitou algo
-  const usadas=q?tags.map(t=>t.tag).filter(t=>!SUGESTOES.includes(t)):[];
-  sugItems=[...SUGESTOES,...usadas].filter(t=>{const s=semAcento(t.slice(1));return s.startsWith(q)&&s!==q}).slice(0,8);
+  sugItems=sugerirTags(tags.map(t=>t.tag),tk.q);
   if(!sugItems.length){hideSug();return}
   sugIdx=0;$('sug').hidden=false;$('texto').setAttribute('aria-expanded','true');paintSug();
 }
@@ -409,6 +401,7 @@ $('hoje').onclick=()=>{$('busca').value='';searching=false;cur=new Date();load()
 window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('busca').focus();$('busca').select()}});
 window.addEventListener('keydown',e=>{if(e.altKey&&!e.ctrlKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();(e.key==='ArrowLeft'?$('prev'):$('next')).click()}});
 window.addEventListener('focus-capture',()=>{if(fmt(cur)!==fmt(new Date())){cur=new Date()} $('busca').value='';searching=false;load();$('texto').focus()});
+window.addEventListener('agenda-refresh',()=>{load();loadTags()});
 window.addEventListener('focus',()=>{load();loadTags()});
 load();loadTags();
 </script>

@@ -199,7 +199,9 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/api/delete' && req.method === 'POST') { const b = await body(req); return json({ ok: deleteEntry(b.date, b.idx, b.old) }); }
     if (u.pathname === '/api/restore' && req.method === 'POST') { const b = await body(req); return json({ ok: restoreEntry(b.date, b.idx, b.line) }); }
     if (u.pathname === '/api/toggle' && req.method === 'POST') { const b = await body(req); toggle(b.date, b.idx); return json({ ok: 1 }); }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(fs.readFileSync(path.join(__dirname, 'index.html')));
+    const estaticos = { '/quick': ['quick.html', 'text/html; charset=utf-8'], '/shared.js': ['shared.js', 'text/javascript; charset=utf-8'] };
+    const [arquivo, tipo] = estaticos[u.pathname] || ['index.html', 'text/html; charset=utf-8'];
+    res.writeHead(200, { 'Content-Type': tipo });
+    res.end(fs.readFileSync(path.join(__dirname, arquivo)));
   } catch (e) { res.writeHead(500); res.end(String(e)); }
 }).listen(PORT, '127.0.0.1', () => console.log(`Agenda em http://localhost:${PORT}  ->  ${ROOT}`));
