@@ -50,10 +50,10 @@ function ensureDay(dateStr) {
   addLink(p.monthNote, `# ${MESES[p.m]} ${p.y}\n\n## Semanas\n`, `[[${p.weekName}]]`);
   return p;
 }
-function addEntry(dateStr, tipo, texto) {
+function addEntry(dateStr, pendente, texto) {
   const p = ensureDay(dateStr), sec = 'Anotações';
   const hora = new Date().toTimeString().slice(0, 5);
-  const linha = `- ${hora} ${texto}`;
+  const linha = pendente ? `- [ ] ${hora} ${texto}` : `- ${hora} ${texto}`;
   const lines = fs.readFileSync(p.day, 'utf8').split('\n');
   let i = lines.findIndex(l => l.trim() === `## ${sec}`);
   if (i < 0) { lines.push('', `## ${sec}`); i = lines.length - 1; }
@@ -80,6 +80,41 @@ function toggle(dateStr, idx) {
   else if (/^- \[x\]/.test(lines[idx])) lines[idx] = lines[idx].replace('- [x]', '- [ ]');
   fs.writeFileSync(p.day, lines.join('\n'));
 }
+// Todos os arquivos de dia (AAAA-MM-DD.md), do mais novo para o mais antigo
+function dayFiles() {
+  const out = [];
+  (function walk(d) {
+    let es; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { return; }
+    for (const e of es) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) walk(f);
+      else if (/^\d{4}-\d{2}-\d{2}\.md$/.test(e.name)) out.push({ date: e.name.slice(0, 10), file: f });
+    }
+  })(ROOT);
+  return out.sort((a, b) => b.date.localeCompare(a.date));
+}
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function linesOf(f) { return fs.readFileSync(f, 'utf8').split('\n'); }
+function search(q) {
+  const n = norm(q.trim()), out = [];
+  if (!n) return out;
+  for (const { date, file } of dayFiles()) {
+    linesOf(file).forEach((l, idx) => {
+      if (l.startsWith('- ') && norm(l).includes(n)) out.push({ date, idx, text: l });
+    });
+    if (out.length >= 200) break;
+  }
+  return out.slice(0, 200);
+}
+// Tarefas ainda abertas em dias anteriores a `before`, as mais antigas primeiro
+function pending(before) {
+  const out = [];
+  for (const { date, file } of dayFiles().reverse()) {
+    if (date >= before) break;
+    linesOf(file).forEach((l, idx) => { if (/^- \[ \]/.test(l)) out.push({ date, idx, text: l }); });
+  }
+  return out;
+}
 function body(req) { return new Promise(r => { let b = ''; req.on('data', c => b += c); req.on('end', () => r(JSON.parse(b || '{}'))); }); }
 
 http.createServer(async (req, res) => {
@@ -87,7 +122,9 @@ http.createServer(async (req, res) => {
   const json = o => { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
   try {
     if (u.pathname === '/api/day') return json(readDay(u.searchParams.get('date')));
-    if (u.pathname === '/api/add' && req.method === 'POST') { const b = await body(req); addEntry(b.date, b.tipo, b.texto); return json({ ok: 1 }); }
+    if (u.pathname === '/api/search') return json(search(u.searchParams.get('q') || ''));
+    if (u.pathname === '/api/pending') return json(pending(u.searchParams.get('before')));
+    if (u.pathname === '/api/add' && req.method === 'POST') { const b = await body(req); addEntry(b.date, !!b.pendente, b.texto); return json({ ok: 1 }); }
     if (u.pathname === '/api/toggle' && req.method === 'POST') { const b = await body(req); toggle(b.date, b.idx); return json({ ok: 1 }); }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(fs.readFileSync(path.join(__dirname, 'index.html')));
