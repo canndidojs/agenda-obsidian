@@ -4,7 +4,7 @@ New-Item -ItemType Directory -Force $out | Out-Null
 
 function RoundRect($x, $y, $w, $h, $r) {
     $p = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $d = [Math]::Max($r * 2, 0.01)
+    $d = $r * 2
     $p.AddArc($x, $y, $d, $d, 180, 90)
     $p.AddArc($x + $w - $d, $y, $d, $d, 270, 90)
     $p.AddArc($x + $w - $d, $y + $h - $d, $d, $d, 0, 90)
@@ -14,37 +14,32 @@ function RoundRect($x, $y, $w, $h, $r) {
 }
 function C($hex) { [System.Drawing.ColorTranslator]::FromHtml($hex) }
 
-# Ícone plano: fundo preto, folha de calendário em contorno branco, faixa e check laranja
+# Ícone minimalista: fundo roxo liso, calendário branco só com contorno, faixa e um marcador do dia
 function Render([int]$s) {
     $bmp = New-Object System.Drawing.Bitmap $s, $s
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = 'AntiAlias'
     $g.PixelOffsetMode = 'HighQuality'
     $g.Clear([System.Drawing.Color]::Transparent)
-    $orange = C '#FF6A2B'
+    $white = [System.Drawing.Brushes]::White
 
-    $g.FillPath((New-Object System.Drawing.SolidBrush (C '#0F0F10')), (RoundRect 0 0 $s $s ($s * 0.12)))
+    $g.FillPath((New-Object System.Drawing.SolidBrush (C '#7C5CE6')), (RoundRect 0 0 $s $s ($s * 0.22)))
 
-    # Faixa laranja no topo da folha
-    $g.FillRectangle((New-Object System.Drawing.SolidBrush $orange), $s * 0.20, $s * 0.26, $s * 0.60, $s * 0.14)
+    $x = $s * 0.25; $y = $s * 0.27; $w = $s * 0.50; $h = $s * 0.48
+    $t = [Math]::Max($s * 0.065, 1.5)
 
-    # Contorno branco da folha
-    $w = [Math]::Max($s * 0.055, 1.2)
-    $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), $w
+    # contorno do calendário
+    $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), $t
     $pen.LineJoin = 'Miter'
-    $g.DrawRectangle($pen, $s * 0.20 + $w / 2, $s * 0.26 + $w / 2, $s * 0.60 - $w, $s * 0.56 - $w)
+    $g.DrawRectangle($pen, $x + $t / 2, $y + $t / 2, $w - $t, $h - $t)
 
-    # Argolas
-    $g.FillRectangle([System.Drawing.Brushes]::White, $s * 0.33, $s * 0.17, $s * 0.055, $s * 0.15)
-    $g.FillRectangle([System.Drawing.Brushes]::White, $s * 0.615, $s * 0.17, $s * 0.055, $s * 0.15)
+    # faixa superior cheia
+    $g.FillRectangle($white, $x, $y, $w, $s * 0.15)
 
-    # Check laranja
-    $cp = New-Object System.Drawing.Pen $orange, ([Math]::Max($s * 0.07, 1.5))
-    $cp.LineJoin = 'Miter'; $cp.StartCap = 'Flat'; $cp.EndCap = 'Flat'
-    $g.DrawLines($cp, @(
-        (New-Object System.Drawing.PointF ($s * 0.34), ($s * 0.62)),
-        (New-Object System.Drawing.PointF ($s * 0.455), ($s * 0.72)),
-        (New-Object System.Drawing.PointF ($s * 0.67), ($s * 0.52))))
+    # marcador do dia
+    $m = $s * 0.10
+    $gap = $s * 0.055
+    $g.FillRectangle($white, $x + $w - $t - $gap - $m, $y + $h - $t - $gap - $m, $m, $m)
     $g.Dispose()
     $bmp
 }
