@@ -25,7 +25,9 @@ O vault é descoberto sozinho a partir da configuração do Obsidian (o vault qu
 ## Uso
 
 - Escreva e aperte Enter: a anotação entra com a hora.
-- `#tags` no texto viram etiquetas coloridas (e o Obsidian as indexa). Clicar numa tag busca por ela.
+- `#tags` no texto viram etiquetas coloridas (e o Obsidian as indexa). Ao digitar `#`, aparecem as tags já usadas para escolher. Clicar numa tag busca por ela.
+- Passando o mouse numa anotação aparecem os botões de editar e apagar. Apagar mostra um aviso com "Desfazer".
+- As notas da semana e do mês são geradas sozinhas: a semana junta os dias e as pendências abertas, o mês lista as semanas com contagens.
 - `Ctrl+K` busca em todos os dias, sem diferenciar acentos nem maiúsculas.
 - Marcar "Pendente" grava a anotação como `- [ ]`. Ela reaparece nos dias seguintes, em "Pendentes de dias anteriores", até ser concluída.
 - `Ctrl+Alt+N` abre a janela de qualquer lugar.

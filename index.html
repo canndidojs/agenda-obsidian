@@ -88,7 +88,27 @@ li{display:flex;align-items:baseline;gap:10px;padding:8px 12px;border-radius:10p
 li:hover{background:var(--surface)}
 .time{flex:none;color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
 .empty{color:var(--mut);font-size:14px;padding:6px 12px}
-li label{display:flex;align-items:baseline;gap:10px;cursor:pointer;width:100%}
+li label{display:flex;align-items:baseline;gap:10px;cursor:pointer;flex:1;min-width:0}
+.capture{position:relative}
+#sug{position:absolute;left:12px;right:12px;top:calc(100% - 4px);z-index:5;max-width:320px;padding:4px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#sug[hidden]{display:none}
+#sug li{display:flex;justify-content:space-between;gap:16px;padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+#sug li small{color:var(--mut);font-weight:400;font-variant-numeric:tabular-nums}
+#sug li[aria-selected=true]{background:var(--ac);color:var(--ac-tx)}
+#sug li[aria-selected=true] small{color:inherit;opacity:.8}
+.acts{display:flex;flex:none;gap:2px;margin-left:auto;align-self:center;opacity:0;transition:opacity .15s}
+li:hover .acts,li:focus-within .acts{opacity:1}
+.acts button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--mut);cursor:pointer}
+.acts button:hover{background:var(--surface-2);color:var(--tx)}
+.acts button.del:hover{color:#ff6b6b}
+.acts svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.edit{flex:1;min-width:0;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--ac);background:var(--surface);font-size:15px}
+.edit:focus{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;
+  border-radius:12px;background:var(--tx);color:var(--bg);font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+#toast[hidden]{display:none}
+#toast button{border:0;background:none;color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:4px 6px;border-radius:6px}
 li input[type=checkbox]{flex:none;width:18px;height:18px;margin:0;align-self:center;accent-color:var(--ac);cursor:pointer}
 .done{color:var(--mut);text-decoration:line-through}
 .tag{display:inline;padding:0 7px;margin:0 1px;border:0;border-radius:99px;cursor:pointer;font-size:.9em;font-weight:600;
@@ -125,10 +145,12 @@ footer a:hover{text-decoration:underline}
 
   <form class="capture" id="f" autocomplete="off">
     <div class="row">
-      <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="O que apareceu agora… (use #tags)" spellcheck="true">
+      <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="O que apareceu agora…" spellcheck="true"
+        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sug">
       <label class="pend" title="A anotação volta nos dias seguintes até você concluir"><input type="checkbox" id="pend"><span>Pendente</span></label>
       <button class="save" type="submit">Anotar</button>
     </div>
+    <ul id="sug" role="listbox" aria-label="Tags já usadas" hidden></ul>
     <p class="hint"><kbd>Enter</kbd> salva · <kbd>Ctrl</kbd>+<kbd>K</kbd> busca · <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> abre de qualquer lugar</p>
   </form>
 
@@ -140,6 +162,7 @@ footer a:hover{text-decoration:underline}
   </footer>
   <div id="status" role="status" aria-live="polite"></div>
 </main>
+<div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Desfazer</button></div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -166,7 +189,38 @@ function rich(el,text){
   });
 }
 // Uma linha de anotação; `date` é o dia do arquivo (pode ser diferente do dia aberto)
-function item(it,date,showDate){
+const ICON={
+  edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  del:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>'
+};
+function mkBtn(cls,label,icon,fn){
+  const b=document.createElement('button');b.type='button';b.className=cls;b.title=label;b.setAttribute('aria-label',label);
+  b.innerHTML=icon;b.onclick=fn;return b;
+}
+// Aviso com "Desfazer" depois de apagar
+let toastTimer,undoFn=null;
+function toast(msg,undo){
+  $('toast-msg').textContent=msg;undoFn=undo;$('toast-undo').hidden=!undo;$('toast').hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('toast').hidden=true;undoFn=null},8000);
+}
+$('toast-undo').onclick=async()=>{const f=undoFn;$('toast').hidden=true;undoFn=null;if(f){await f();load()}};
+function startEdit(li,it,date,text){
+  const txt=li.querySelector('.txt');
+  const inp=document.createElement('input');inp.className='edit';inp.value=text;inp.setAttribute('aria-label','Editar anotação');
+  txt.replaceWith(inp);li.querySelector('.acts')?.remove();inp.focus();inp.select();
+  let done=false;
+  const save=async()=>{
+    if(done)return;done=true;
+    const v=inp.value.trim();
+    if(!v||v===text){load();return}
+    const r=await post('/api/edit',{date,idx:it.idx,old:it.text,texto:v}).then(x=>x.json());
+    $('status').textContent=r.ok?'Anotação atualizada':'O arquivo mudou; recarreguei o dia';
+    loadTags();load();
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save()}else if(e.key==='Escape'){done=true;load()}});
+  inp.addEventListener('blur',save);
+}
+function item(it,date,showDate,actions){
   const li=document.createElement('li');
   const t=it.text.replace(/^- /,'');
   const task=t.match(/^\[( |x)\] (.*)/);
@@ -174,18 +228,30 @@ function item(it,date,showDate){
   const m=body.match(/^(\d{2}:\d{2}) (.*)/);
   const label=showDate?date.slice(8)+'/'+date.slice(5,7):(m?m[1]:'');
   const text=m?m[2]:body;
-  const txt=document.createElement('span');rich(txt,text);
+  const txt=document.createElement('span');txt.className='txt';rich(txt,text);
   if(task){
     const lb=document.createElement('label');
     const cb=document.createElement('input');cb.type='checkbox';cb.checked=task[1]==='x';cb.setAttribute('aria-label',text);
     cb.onchange=async()=>{await post('/api/toggle',{date,idx:it.idx});$('status').textContent=cb.checked?'Pendência concluída':'Pendência reaberta';load()};
-    if(cb.checked)txt.className='done';
+    if(cb.checked)txt.className='txt done';
     lb.append(cb);
     if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;lb.append(tm)}
     lb.append(txt);li.append(lb);
   }else{
     if(label){const tm=document.createElement('span');tm.className='time';tm.textContent=label;li.append(tm)}
     li.append(txt);
+  }
+  if(actions){
+    const acts=document.createElement('span');acts.className='acts';
+    acts.append(
+      mkBtn('','Editar anotação',ICON.edit,()=>startEdit(li,it,date,text)),
+      mkBtn('del','Apagar anotação',ICON.del,async()=>{
+        const r=await post('/api/delete',{date,idx:it.idx,old:it.text}).then(x=>x.json());
+        if(!r.ok){$('status').textContent='O arquivo mudou; recarreguei o dia';load();return}
+        await load();
+        toast('Anotação apagada.',()=>post('/api/restore',{date,idx:it.idx,line:it.text}));
+      }));
+    li.append(acts);
   }
   return li;
 }
@@ -223,7 +289,7 @@ async function load(){
   const abertas=items.filter(i=>/^- \[ \]/.test(i.text)).length;
   const sec=section('Anotações',null,abertas?`${abertas} pendente${abertas>1?'s':''}`:null);
   if(!items.length){const p=document.createElement('p');p.className='empty';p.textContent='Nada anotado neste dia ainda. Escreva acima e aperte Enter.';sec.append(p)}
-  else{const ul=document.createElement('ul');items.forEach(it=>ul.append(item(it,ds,false)));sec.append(ul)}
+  else{const ul=document.createElement('ul');items.forEach(it=>ul.append(item(it,ds,false,true)));sec.append(ul)}
   lista.append(sec);
 }
 
@@ -258,12 +324,57 @@ async function runSearch(){
 $('busca').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(runSearch,200)});
 $('busca').addEventListener('keydown',e=>{if(e.key==='Escape'){$('busca').value='';runSearch();$('texto').focus()}});
 
+// Sugestão de tags ao digitar #
+let tags=[],sugItems=[],sugIdx=0;
+const tokenRe=/(^|\s)#([\p{L}\p{N}_\/-]*)$/u;
+async function loadTags(){try{tags=await get('/api/tags')}catch{}}
+function tagToken(){
+  const i=$('texto'),before=i.value.slice(0,i.selectionStart),m=before.match(tokenRe);
+  return m?{q:m[2].toLowerCase(),start:before.length-m[2].length-1}:null;
+}
+function hideSug(){const s=$('sug');s.hidden=true;s.textContent='';sugItems=[];$('texto').setAttribute('aria-expanded','false');$('texto').removeAttribute('aria-activedescendant')}
+function paintSug(){
+  const s=$('sug');s.textContent='';
+  sugItems.forEach((t,i)=>{
+    const li=document.createElement('li');li.id='sug-'+i;li.setAttribute('role','option');li.setAttribute('aria-selected',i===sugIdx);
+    const a=document.createElement('span');a.textContent=t.tag;const b=document.createElement('small');b.textContent=t.n+'×';
+    li.append(a,b);
+    li.addEventListener('mousedown',e=>{e.preventDefault();acceptSug(i)});
+    s.append(li);
+  });
+  $('texto').setAttribute('aria-activedescendant','sug-'+sugIdx);
+}
+function showSug(){
+  const tk=tagToken();
+  if(!tk){hideSug();return}
+  sugItems=tags.filter(t=>t.tag.slice(1).startsWith(tk.q)&&t.tag.slice(1)!==tk.q).slice(0,6);
+  if(!sugItems.length){hideSug();return}
+  sugIdx=0;$('sug').hidden=false;$('texto').setAttribute('aria-expanded','true');paintSug();
+}
+function acceptSug(i){
+  const inp=$('texto'),tk=tagToken();if(!tk)return;
+  const after=inp.value.slice(inp.selectionStart),ins=sugItems[i].tag+' ';
+  inp.value=inp.value.slice(0,tk.start)+ins+after.replace(/^ /,'');
+  const pos=tk.start+ins.length;inp.setSelectionRange(pos,pos);hideSug();inp.focus();
+}
+$('texto').addEventListener('input',showSug);
+$('texto').addEventListener('click',showSug);
+$('texto').addEventListener('blur',hideSug);
+$('texto').addEventListener('keydown',e=>{
+  if($('sug').hidden)return;
+  if(e.key==='ArrowDown'){e.preventDefault();sugIdx=(sugIdx+1)%sugItems.length;paintSug()}
+  else if(e.key==='ArrowUp'){e.preventDefault();sugIdx=(sugIdx-1+sugItems.length)%sugItems.length;paintSug()}
+  else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();acceptSug(sugIdx)}
+  else if(e.key==='Escape'){e.preventDefault();hideSug()}
+});
+
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const t=$('texto').value.trim();if(!t)return;
   await post('/api/add',{date:fmt(cur),texto:t,pendente:$('pend').checked});
   $('texto').value='';$('pend').checked=false;$('status').textContent='Anotação salva';
   if(searching){$('busca').value='';searching=false}
+  hideSug();loadTags();
   await load();$('texto').focus();
 });
 $('prev').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDate()-1);load()};
@@ -271,8 +382,8 @@ $('next').onclick=()=>{$('busca').value='';searching=false;cur.setDate(cur.getDa
 $('hoje').onclick=()=>{$('busca').value='';searching=false;cur=new Date();load();$('texto').focus()};
 window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('busca').focus();$('busca').select()}});
 window.addEventListener('focus-capture',()=>{if(fmt(cur)!==fmt(new Date())){cur=new Date()} $('busca').value='';searching=false;load();$('texto').focus()});
-window.addEventListener('focus',()=>{load()});
-load();
+window.addEventListener('focus',()=>{load();loadTags()});
+load();loadTags();
 </script>
 </body>
 </html>
