@@ -30,7 +30,8 @@ O vault é descoberto sozinho a partir da configuração do Obsidian (o vault qu
 - As notas da semana e do mês são geradas sozinhas: a semana junta os dias e as pendências abertas, o mês lista as semanas com contagens.
 - `Ctrl+K` busca em todos os dias, sem diferenciar acentos nem maiúsculas.
 - Marcar "Pendente" grava a anotação como `- [ ]`. Ela reaparece nos dias seguintes, em "Pendentes de dias anteriores", até ser concluída.
-- `Ctrl+Alt+N` abre a janela de qualquer lugar.
+- `Ctrl+Alt+N` abre, de qualquer programa, uma janela mínima só com o campo de anotação (com sugestão de tags e `Alt+P` para marcar como pendente). `Enter` salva e a janela some; `Esc` ou clicar fora fecha sem salvar.
+- `Ctrl+Alt+A` abre a agenda completa.
 - Fechar a janela mantém o app na bandeja. Para encerrar, use "Sair" no ícone da bandeja.
 - Para iniciar com o Windows, coloque um atalho para `electron.exe "<pasta do app>" --hidden` em `shell:startup`.
 
