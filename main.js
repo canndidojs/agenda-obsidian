@@ -17,7 +17,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 520, height: 780, minWidth: 400, minHeight: 520,
     title: 'Agenda', icon, show: false,
-    backgroundColor: '#14131a',
+    backgroundColor: '#0f0f10',
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
   });
