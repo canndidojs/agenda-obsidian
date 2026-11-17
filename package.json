@@ -1,6 +1,6 @@
 {
     "name": "agenda-obsidian",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Anotaí: anotações do dia ligadas ao Obsidian",
     "main": "main.js",
     "scripts": {

@@ -50,9 +50,10 @@ kbd{font:inherit;color:var(--tx)}
     <input id="texto" name="texto" type="text" aria-label="Texto da anotação" placeholder="Anotar agora…" spellcheck="true"
       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sug">
     <label class="pend" title="A anotação volta nos dias seguintes até você concluir (Alt+P)"><input type="checkbox" id="pend"><span>Pendente</span></label>
+    <label class="pend" title="A anotação fica no topo de todos os dias até você apagar (Alt+F)"><input type="checkbox" id="fixa"><span>Fixa</span></label>
   </div>
   <ul id="sug" role="listbox" aria-label="Tags sugeridas" hidden></ul>
-  <p class="hint" id="hint"><kbd>Enter</kbd> anota · <kbd>Alt</kbd>+<kbd>P</kbd> pendente · <kbd>Esc</kbd> fecha</p>
+  <p class="hint" id="hint"><kbd>Enter</kbd> anota · <kbd>Alt</kbd>+<kbd>P</kbd> pendente · <kbd>Alt</kbd>+<kbd>F</kbd> fixa · <kbd>Esc</kbd> fecha</p>
   <p class="done" id="done" role="status" hidden>Anotado.</p>
 </form>
 <script src="/shared.js"></script>
@@ -102,7 +103,8 @@ $('texto').addEventListener('keydown',e=>{
 });
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&$('sug').hidden){window.agendaQuick&&window.agendaQuick.close()}
-  if(e.altKey&&e.key.toLowerCase()==='p'){e.preventDefault();$('pend').checked=!$('pend').checked}
+  if(e.altKey&&e.key.toLowerCase()==='p'){e.preventDefault();$('pend').checked=!$('pend').checked;if($('pend').checked)$('fixa').checked=false}
+  if(e.altKey&&e.key.toLowerCase()==='f'){e.preventDefault();$('fixa').checked=!$('fixa').checked;if($('fixa').checked)$('pend').checked=false}
 });
 
 $('f').addEventListener('submit',async e=>{
@@ -110,7 +112,9 @@ $('f').addEventListener('submit',async e=>{
   const t=$('texto').value.trim();if(!t||saving)return;
   saving=true;
   try{
-    const r=await fetch('/api/add',{method:'POST',body:JSON.stringify({date:hoje(),texto:t,pendente:$('pend').checked})});
+    const r=$('fixa').checked
+      ?await fetch('/api/fixas/add',{method:'POST',body:JSON.stringify({texto:t})})
+      :await fetch('/api/add',{method:'POST',body:JSON.stringify({date:hoje(),texto:t,pendente:$('pend').checked})});
     if(!r.ok)throw new Error();
   }catch{saving=false;$('hint').textContent='Não consegui salvar. Reabra o app.';return}
   hideSug();$('row').hidden=true;$('hint').hidden=true;$('done').hidden=false;
@@ -119,9 +123,9 @@ $('f').addEventListener('submit',async e=>{
 
 // Cada vez que a janela é aberta: limpa, foca e atualiza as tags
 function reset(){
-  saving=false;$('texto').value='';$('pend').checked=false;
+  saving=false;$('texto').value='';$('pend').checked=false;$('fixa').checked=false;
   $('row').hidden=false;$('hint').hidden=false;$('done').hidden=true;
-  $('hint').innerHTML='<kbd>Enter</kbd> anota · <kbd>Alt</kbd>+<kbd>P</kbd> pendente · <kbd>Esc</kbd> fecha';
+  $('hint').innerHTML='<kbd>Enter</kbd> anota · <kbd>Alt</kbd>+<kbd>P</kbd> pendente · <kbd>Alt</kbd>+<kbd>F</kbd> fixa · <kbd>Esc</kbd> fecha';
   hideSug();loadTags();$('texto').focus();
 }
 window.addEventListener('quick-show',reset);
